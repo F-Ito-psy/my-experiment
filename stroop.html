@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stroop Task - ストループ課題 (表示修正版)</title>
+    <title>Stroop Task - ストループ課題 (データ表示修正版)</title>
     <!-- jsPsych 7.3系のコアライブラリ -->
     <script src="https://unpkg.com/jspsych@7.3.4/dist/index.browser.js"></script>
     <!-- 各種プラグイン (scoped packages) -->
@@ -24,7 +24,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden; /* スクロールバーを隠す */
+            overflow: hidden; /* 実験中はスクロールを隠す */
         }
         
         /* 実験コンテンツのコンテナ設定 */
@@ -32,6 +32,7 @@
             width: 100%;
             height: 100%;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
@@ -45,13 +46,13 @@
             margin: 0 auto;
         }
 
-        /* 刺激（文字）のテキスト：表示切れを防ぐための設定 */
+        /* 刺激（文字）のテキスト：中央配置と視認性を確保 */
         .stimulus-text {
-            font-size: 80px; /* 少し大きく調整 */
+            font-size: 60px; /* 仕様書に基づき60pxに設定 */
             font-weight: bold;
-            line-height: 1.2; /* 行の高さを確保して上下の欠けを防ぐ */
-            display: inline-block;
-            vertical-align: middle;
+            line-height: 1.2; 
+            display: block;
+            text-align: center;
         }
 
         /* jsPsychのボタンデザイン */
@@ -60,6 +61,22 @@
             padding: 12px 24px;
             border-radius: 8px;
             cursor: pointer;
+        }
+
+        /* 実験終了後のデータ表示(CSV)用スタイル */
+        pre {
+            text-align: left;
+            white-space: pre-wrap; /* 長い行を折り返す */
+            word-wrap: break-word;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.4;
+            width: 90%;
+            max-width: 1000px;
+            margin: 20px auto;
+            background: #f4f4f4;
+            border-radius: 8px;
+            border: 1px solid #ddd;
         }
     </style>
 </head>
@@ -71,7 +88,10 @@
         const jsPsych = initJsPsych({
             display_element: 'jspsych-target',
             on_finish: function() {
-                // 実験終了時にデータをCSV形式で表示
+                // 実験終了時にスクロールを許可し、データを表示
+                document.body.style.overflow = 'auto'; 
+                // ターゲット要素の中央寄せを解除してデータが上から表示されるようにする
+                document.getElementById('jspsych-target').style.justifyContent = 'flex-start';
                 jsPsych.data.displayData('csv');
             }
         });
@@ -83,7 +103,7 @@
             { name: "緑", value: "green", key: "g" }
         ];
 
-        // 全ての組み合わせ（3×3 = 9種類）を生成
+        // 要因計画: 全ての組み合わせ（3×3 = 9種類）を生成
         let stroop_stimuli = [];
         colors.forEach(textObj => {
             colors.forEach(colorObj => {
@@ -96,12 +116,12 @@
             });
         });
 
-        // 10試行をランダムに抽出
+        // 合計10試行をランダムに抽出
         const trials_to_run = jsPsych.randomization.sampleWithReplacement(stroop_stimuli, 10);
 
         let timeline = [];
 
-        // 1. 開始ボタン画面
+        // 1. 開始ボタン画面（全画面許可エラー回避のため）
         const start_trial = {
             type: jsPsychHtmlButtonResponse,
             stimulus: '<div class="instruction-text"><p>ストループ課題を開始します</p></div>',
@@ -115,18 +135,19 @@
             type: jsPsychHtmlKeyboardResponse,
             stimulus: `
                 <div class="instruction-text">
-                    <p>文字の「色」をできるだけ早く正確に答えてください。</p>
+                    <p>文字の「色」をキーボードで答えてください。</p>
                     <p>赤色の文字なら <span style="color:red; font-weight:bold;">'r'</span></p>
                     <p>青色の文字なら <span style="color:blue; font-weight:bold;">'b'</span></p>
                     <p>緑色の文字なら <span style="color:green; font-weight:bold;">'g'</span></p>
                     <br>
-                    <p>準備ができたら「スペースキー」を押して開始します。</p>
+                    <p>スペースキーで開始します。</p>
                 </div>
             `,
             choices: [' ']
         };
         timeline.push(instructions);
 
+        // 3. メイン試行ループ
         trials_to_run.forEach((stim) => {
             
             // a. 注視点 (+) 500ms
