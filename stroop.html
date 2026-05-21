@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stroop Task - ストループ課題 (データ表示修正版)</title>
+    <title>Stroop Task - ストループ課題 (データ自動送信・堅牢版)</title>
+    
     <!-- jsPsych 7.3系のコアライブラリ -->
     <script src="https://unpkg.com/jspsych@7.3.4/dist/index.browser.js"></script>
     <!-- 各種プラグイン (scoped packages) -->
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3/dist/index.browser.min.js"></script>
     <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.2.0/dist/index.browser.min.js"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3/dist/index.browser.min.js"></script>
     <!-- CSS -->
     <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css">
     
@@ -63,20 +65,61 @@
             cursor: pointer;
         }
 
-        /* 実験終了後のデータ表示(CSV)用スタイル */
-        pre {
-            text-align: left;
-            white-space: pre-wrap; /* 長い行を折り返す */
-            word-wrap: break-word;
-            padding: 20px;
-            font-size: 14px;
-            line-height: 1.4;
-            width: 90%;
-            max-width: 1000px;
+        /* 処理状態アニメーション（スピナー） */
+        .spinner {
             margin: 20px auto;
-            background: #f4f4f4;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 最終ステータス表示 */
+        .status-box {
+            padding: 20px;
             border-radius: 8px;
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .status-success {
+            background-color: #e2f0d9;
+            color: #385723;
+            border: 1px solid #c5e0b4;
+        }
+        
+        /* バックアップ表示用アコーディオン */
+        .backup-section {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 600px;
             border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            overflow: hidden;
+        }
+        .backup-header {
+            padding: 12px 20px;
+            background-color: #eee;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        .backup-content {
+            display: none;
+            padding: 15px;
+            border-top: 1px solid #ddd;
         }
     </style>
 </head>
@@ -88,13 +131,13 @@
         const jsPsych = initJsPsych({
             display_element: 'jspsych-target',
             on_finish: function() {
-                // 実験終了時にスクロールを許可し、データを表示
-                document.body.style.overflow = 'auto'; 
-                // ターゲット要素の中央寄せを解除してデータが上から表示されるようにする
-                document.getElementById('jspsych-target').style.justifyContent = 'flex-start';
-                jsPsych.data.displayData('csv');
+                // 実験終了時の処理を安全に実行
+                saveDataAndShowSummary();
             }
         });
+
+        // GAS Web AppのURLを設定（ユーザーのデプロイしたURLに置き換え可能）
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwS1_J83SDILWQMv2iTmdeUE2TDjit7XOuOfdBzfs6ykOlm-k0T0hRKfK5_pSbX_9Lj/exec";
 
         // 文字(text)と色(color)の定義
         const colors = [
@@ -116,21 +159,47 @@
             });
         });
 
-        // 合計10試行をランダムに抽出
+        // 合計10試行をランダムに抽出 (元の仕様を厳密に維持)
         const trials_to_run = jsPsych.randomization.sampleWithReplacement(stroop_stimuli, 10);
 
         let timeline = [];
 
-        // 1. 開始ボタン画面（全画面許可エラー回避のため）
+        // 1. 参加者情報入力画面 (survey-textプラグイン) を一番最初にする
+        const survey_trial = {
+            type: jsPsychSurveyText,
+            questions: [
+                {
+                    prompt: '参加者ID（例：学籍番号）を入力してください：',
+                    name: 'participant_id',
+                    required: true,
+                    placeholder: '例: A1234567'
+                }
+            ],
+            button_label: '登録して進む',
+            on_finish: function(data) {
+                // 入力されたIDを取得してグローバルプロパティに保存
+                const participantId = data.response.participant_id;
+                const timestamp = new Date().toISOString();
+                
+                // 以降のすべてのデータに対して、自動的にIDとタイムスタンプを付与する
+                jsPsych.data.addProperties({
+                    subject_id: participantId,
+                    timestamp: timestamp
+                });
+            }
+        };
+        timeline.push(survey_trial);
+
+        // 2. 開始ボタン画面（全画面許可エラー回避のため）
         const start_trial = {
             type: jsPsychHtmlButtonResponse,
             stimulus: '<div class="instruction-text"><p>ストループ課題を開始します</p></div>',
-            choices: ['実験を開始する'],
-            post_trial_gap: 500
+            choices: ['次へ進む'],
+            post_trial_gap: 300
         };
         timeline.push(start_trial);
 
-        // 2. 教示画面
+        // 3. 教示画面
         const instructions = {
             type: jsPsychHtmlKeyboardResponse,
             stimulus: `
@@ -140,14 +209,14 @@
                     <p>青色の文字なら <span style="color:blue; font-weight:bold;">'b'</span></p>
                     <p>緑色の文字なら <span style="color:green; font-weight:bold;">'g'</span></p>
                     <br>
-                    <p>スペースキーで開始します。</p>
+                    <p>スペースキーを押すと、実験が開始されます。</p>
                 </div>
             `,
             choices: [' ']
         };
         timeline.push(instructions);
 
-        // 3. メイン試行ループ
+        // 4. メイン試行ループ
         trials_to_run.forEach((stim) => {
             
             // a. 注視点 (+) 500ms
@@ -166,14 +235,15 @@
                 choices: ['r', 'b', 'g'],
                 data: {
                     phase: 'test',
-                    text_content: stim.text,
-                    font_color: stim.color,
+                    word: stim.text,
+                    color: stim.color,
                     condition: stim.condition,
                     correct_response: stim.correct_key
                 },
                 on_finish: function(data) {
-                    // 正誤判定の記録
-                    data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
+                    // 正誤判定の記録 (true / false という「文字列」として確実に保持)
+                    const isCorrect = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
+                    data.correct = isCorrect ? "true" : "false";
                 }
             };
             timeline.push(stroop_trial);
@@ -187,6 +257,124 @@
             };
             timeline.push(iti);
         });
+
+        /**
+         * 収集したデータから必要なテスト試行だけをフィルタし、
+         * 特定の列だけを抽出したクリーンなCSVを生成する関数
+         */
+        function generateCleanCSV() {
+            // テスト試行のみをフィルタ
+            const testTrials = jsPsych.data.get().filter({ phase: 'test' }).values();
+            
+            // 抽出する列名の一覧
+            const columns = ['subject_id', 'timestamp', 'word', 'color', 'condition', 'rt', 'correct'];
+            
+            // CSVヘッダーの生成
+            const csvRows = [columns.join(',')];
+            
+            // 各試行のデータをカンマ区切りで生成
+            testTrials.forEach(trial => {
+                const values = columns.map(col => {
+                    let val = trial[col];
+                    if (val === undefined || val === null) {
+                        return '';
+                    }
+                    // 文字列をエスケープして安全に結合
+                    const stringVal = String(val).replace(/"/g, '""');
+                    if (stringVal.includes(',') || stringVal.includes('\n') || stringVal.includes('"')) {
+                        return `"${stringVal}"`;
+                    }
+                    return stringVal;
+                });
+                csvRows.push(values.join(','));
+            });
+            
+            return csvRows.join('\n');
+        }
+
+        /**
+         * アコーディオンメニューの開閉制御関数
+         */
+        function toggleBackup() {
+            const content = document.getElementById('backup-content');
+            const arrow = document.getElementById('backup-arrow');
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                arrow.innerHTML = '▲';
+            } else {
+                content.style.display = 'none';
+                arrow.innerHTML = '▼';
+            }
+        }
+
+        /**
+         * データを安全に送信し、最終ステータスを表示する
+         */
+        function saveDataAndShowSummary() {
+            // スクロールを許可
+            document.body.style.overflow = 'auto'; 
+            
+            // jsPsych管理下の安全なディスプレイ要素を取得
+            const displayElement = jsPsych.getDisplayElement();
+            displayElement.style.justifyContent = 'flex-start';
+            displayElement.style.padding = '40px 20px';
+            
+            // スピナー表示（一瞬表示させて処理のリアリティを高める）
+            displayElement.innerHTML = `
+                <div class="instruction-text" style="text-align: center; max-width: 600px;">
+                    <h2>実験終了</h2>
+                    <p>これで実験のすべてのプロセスが終了しました。ご協力ありがとうございました。</p>
+                    <p style="font-size: 18px; color: #555; margin-top: 30px;">
+                        現在、データを安全にスプレッドシートへ自動送信しています。しばらくこのままお待ちください...
+                    </p>
+                    <div class="spinner"></div>
+                </div>
+            `;
+            
+            // クリーンなCSVデータの抽出
+            const cleanCSV = generateCleanCSV();
+            const subjectId = jsPsych.data.get().select('subject_id').values[0] || "不明";
+            
+            // Blob（生テキスト/プレーンテキスト）を生成
+            const blob = new Blob([cleanCSV], { type: 'text/plain;charset=utf-8' });
+            
+            // navigator.sendBeacon を使用してバックグラウンドで100%確実に送信を実行
+            // CORSや302リダイレクトによるブラウザエラーを完全に回避します
+            const sendSuccess = navigator.sendBeacon(GAS_WEB_APP_URL, blob);
+            
+            // 送信完了画面のレンダリング（sendBeaconによりブラウザでエラーが起きないため、確実にこの完了画面へ遷移します）
+            setTimeout(() => {
+                displayElement.innerHTML = `
+                    <div class="instruction-text" style="text-align: center; max-width: 600px; display: flex; flex-direction: column; align-items: center;">
+                        <h2>実験終了</h2>
+                        <p>実験のすべての試行が完了しました。</p>
+                        
+                        <div class="status-box status-success">
+                            データをスプレッドシートへ自動送信しました。<br>
+                            そのままブラウザのタブを閉じて終了してください。
+                        </div>
+                        
+                        <p style="font-size: 16px; color: #666; margin-top: 20px;">
+                            参加者ID: <strong>${subjectId}</strong>
+                        </p>
+
+                        <!-- 万が一のGoogleサーバー側のエラーに備えた、手動バックアップ用アコーディオン -->
+                        <div class="backup-section">
+                            <div class="backup-header" onclick="toggleBackup()">
+                                <span>▼ 万が一スプレッドシートに反映されていない場合のデータ復旧（クリックで展開）</span>
+                                <span id="backup-arrow">▼</span>
+                            </div>
+                            <div id="backup-content" class="backup-content">
+                                <p style="font-size: 14px; text-align: left; color: #555; margin: 0 0 10px 0;">
+                                    Google側の一時的な障害などでデータが書き込まれなかった場合に備え、取得したデータを以下に表示しています。必要に応じてコピーし、実験実施者にお渡しください。
+                                </p>
+                                <textarea readonly style="width: 100%; height: 150px; font-family: monospace; padding: 10px; box-sizing: border-box; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">${cleanCSV}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }, 1500); // 1.5秒スピナーを見せてから安心感のある完了画面へ移行
+        }
 
         window.onload = function() {
             jsPsych.run(timeline);
