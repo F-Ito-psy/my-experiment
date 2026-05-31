@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müller-Lyer Illusion Experiment</title>
+    <!-- jsPsych CDN Assets -->
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response@1.1.3"></script>
+    <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+    
+    <style>
+        /* 全体レイアウトと画面中央配置のためのCSS */
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* jsPsych表示ターゲット要素を画面中央に100%展開 */
+        #jspsych-target {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+
+        .jspsych-content-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 100%;
+            padding: 20px 0;
+        }
+
+        .jspsych-content {
+            max-width: 800px;
+            text-align: center;
+        }
+
+        /* テキスト表示エリアのスタイル */
+        .instruction-box {
+            background-color: #2d2d2d;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            line-height: 1.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .instruction-box h1 {
+            font-size: 24px;
+            margin-top: 0; /* 余分な上マージンを排除 */
+            margin-bottom: 20px;
+            color: #4dabf7;
+        }
+
+        .instruction-box p {
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .instruction-box ul {
+            text-align: left;
+            margin-bottom: 25px;
+            padding-left: 20px;
+        }
+
+        /* 参加者ID入力フォームのスタイル */
+        .id-input-field {
+            padding: 12px 16px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 2px solid #555;
+            background-color: #1a1a1a;
+            color: white;
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+
+        .id-input-field:focus {
+            outline: none;
+            border-color: #1c7ed6;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        /* 実験UIのコンテナ */
+        .experiment-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #2d2d2d;
+            border: 2px solid #555;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* dynamic promptのためのスタイル */
+        .prompt-container {
+            font-size: 15px;
+            color: #cccccc;
+            margin-top: 5px;
+            line-height: 1.5;
+            width: 100%;
+        }
+
+        .trial-counter {
+            font-weight: bold;
+            color: #4dabf7;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .shortcut-guide {
+            background: #333;
+            padding: 8px 15px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 5px;
+            font-size: 13px;
+        }
+
+        /* 画面上調整用ボタンのレイアウト */
+        .adjustment-panel {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0 10px 0;
+            flex-wrap: wrap;
+        }
+
+        /* 実験操作UIの共通ボタンクラス */
+        .btn-ui {
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: background 0.1s, transform 0.05s;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-ui:active {
+            transform: scale(0.96);
+        }
+
+        .btn-adjust-left {
+            background-color: #e03131; /* 赤 */
+        }
+        .btn-adjust-left:hover {
+            background-color: #f03e3e;
+        }
+
+        .btn-adjust-right {
+            background-color: #2b8a3e; /* 緑 */
+        }
+        .btn-adjust-right:hover {
+            background-color: #2f9e44;
+        }
+
+        .btn-adjust-space {
+            background-color: #1c7ed6; /* 青 */
+        }
+        .btn-adjust-space:hover {
+            background-color: #228be6;
+        }
+
+        /* 結果画面ボックス */
+        .results-box {
+            background-color: #2d2d2d;
+            border-radius: 8px;
+            padding: 40px 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .results-box h2 {
+            color: #4dabf7;
+            margin-top: 0;
+            font-size: 26px;
+        }
+
+        /* 送信・保存ステータス表示 */
+        .save-status-banner {
+            background-color: #d9480f; /* 警告色オレンジ */
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 手動ダウンロードボタン */
+        .btn-download {
+            background-color: #3b5bdb;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.05s;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(59,91,219,0.3);
+        }
+
+        .btn-download:hover {
+            background-color: #4c6ef5;
+        }
+        
+        .btn-download:active {
+            transform: scale(0.97);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            background: #252525;
+        }
+
+        .results-table th, .results-table td {
+            border: 1px solid #444;
+            padding: 12px 8px;
+            font-size: 14px;
+        }
+
+        .results-table th {
+            background-color: #3b5bdb;
+            font-weight: bold;
+        }
+
+        /* 送信中ローディングのスタイル */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 6px solid #444;
+            border-top: 6px solid #1c7ed6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- jsPsychを展開するためのターゲット要素 -->
+    <div id="jspsych-target"></div>
+
+    <script>
+        // DOM構築完了後にすべてのスクリプトを安全に起動
+        window.addEventListener('DOMContentLoaded', () => {
+
+            // 送信先のGAS URL
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbwVUtq9EXUjetxkbH_TqRQRz_h2DimXKFJoCklTpe8s-v0TfUJV1Wazr-A5FJmGGJch/exec';
+
+            // jsPsychの初期化
+            const jsPsych = initJsPsych({
+                display_element: 'jspsych-target',
+                on_finish: function() {
+                    // 自動送信と結果画面への移行処理
+                    processFinalSequence();
+                }
+            });
+
+            // 共通定数定義
+            const CANVAS_WIDTH = 700;
+            const CANVAS_HEIGHT = 500;
+            const STANDARD_LENGTH = 200; // 標準刺激のシャフト長(固定)
+
+            // 状態保持用のグローバル変数
+            let currentComparisonLength = 200; // 可変比較刺激の現時点の長さ
+            let participantId = "";            // 参加者ID
+
+            // ミュラー・リヤー錯視を描画する関数
+            function drawMullerLyer(canvas, standardLength, comparisonLength, angle, finLength) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const centerX = canvas.width / 2;
+                const standardY = 150;    // 上側の標準刺激Y座標
+                const comparisonY = 350;  // 下側の比較刺激Y座標
+
+                // --- 1. 標準刺激の描画（上側：内向き羽、200px固定） ---
+                drawSingleStimulus(ctx, centerX, standardY, standardLength, angle, finLength, true);
+
+                // --- 2. 比較刺激の描画（下側：外向き羽、可変長さ） ---
+                drawSingleStimulus(ctx, centerX, comparisonY, comparisonLength, angle, finLength, false);
+            }
+
+            // 単一の刺激を水平に描画する関数
+            // isInwardがtrueなら内向き（標準刺激）、falseなら外向き（比較刺激）
+            function drawSingleStimulus(ctx, centerX, centerY, shaftLength, angleDeg, finLength, isInward) {
+                const leftX = centerX - (shaftLength / 2);
+                const rightX = centerX + (shaftLength / 2);
+
+                // シャフト（中央の水平線）の描画
+                ctx.beginPath();
+                ctx.moveTo(leftX, centerY);
+                ctx.lineTo(rightX, centerY);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // 羽の角度のラジアン計算
+                const angleRad = (angleDeg * Math.PI) / 180;
+
+                // 羽の描画用係数
+                const dx = Math.cos(angleRad) * finLength;
+                const dy = Math.sin(angleRad) * finLength;
+
+                if (isInward) {
+                    // 内向き（シャフトの終点から内側に戻る方向）
+                    // 左端
+                    drawFin(ctx, leftX, centerY, dx, dy);
+                    drawFin(ctx, leftX, centerY, dx, -dy);
+                    // 右端
+                    drawFin(ctx, rightX, centerY, -dx, dy);
+                    drawFin(ctx, rightX, centerY, -dx, -dy);
+                } else {
+                    // 外向き（シャフトの終点から外側に突き出す方向）
+                    // 左端
+                    drawFin(ctx, leftX, centerY, -dx, dy);
+                    drawFin(ctx, leftX, centerY, -dx, -dy);
+                    // 右端
+                    drawFin(ctx, rightX, centerY, dx, dy);
+                    drawFin(ctx, rightX, centerY, dx, -dy);
+                }
+            }
+
+            // 1本の羽を描画する補助関数（矢羽の色を主線と同じ白に変更）
+            function drawFin(ctx, startX, startY, dx, dy) {
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(startX + dx, startY + dy);
+                ctx.strokeStyle = '#ffffff'; // 矢羽の色を白に修正して主線と一致
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // 実験条件の設定
+            // 矢羽の角度 (15, 75) × 羽の長さ (20, 50) = 4条件
+            const factor_angle = [15, 75];
+            const factor_fin_length = [20, 50];
+            
+            // 4条件を生成
+            let design = [];
+            for (let a of factor_angle) {
+                for (let f of factor_fin_length) {
+                    design.push({ angle: a, fin_length: f });
+                }
+            }
+
+            // 全12試行（4条件×3回）
+            let trial_conditions = [];
+            for (let i = 0; i < 3; i++) {
+                trial_conditions = trial_conditions.concat(JSON.parse(JSON.stringify(design)));
+            }
+            // 条件のシャッフル（jsPsychの組み込み関数を使用）
+            trial_conditions = jsPsych.randomization.shuffle(trial_conditions);
+
+            // タイムライン
+            const timeline = [];
+
+            // 0. 参加者ID入力画面
+            const participant_id_trial = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `
+                    <div class="instruction-box" style="max-width: 500px;">
+                        <h1>実験前の準備</h1>
+                        <p>実験を開始する前に、あなたの<strong>参加者ID（またはお名前）</strong>を入力してください。</p>
+                        <div style="margin: 25px 0;">
+                            <input type="text" id="participant-id-input" class="id-input-field" placeholder="参加者IDを入力" autocomplete="off">
+                            <div id="error-msg" class="error-message">※参加者IDを入力してください。</div>
+                        </div>
+                        <button type="button" class="btn-ui btn-adjust-space" id="btn-submit-id" style="padding: 12px 35px;">
+                            決定して教示画面へ
+                        </button>
+                    </div>
+                `,
+                choices: "NO_KEYS",
+                on_load: function() {
+                    const btnSubmit = document.getElementById('btn-submit-id');
+                    const inputField = document.getElementById('participant-id-input');
+                    const errorMsg = document.getElementById('error-msg');
+
+                    if (inputField) {
+                        inputField.focus();
+                    }
+
+                    const processSubmit = () => {
+                        const value = inputField.value.trim();
+                        if (value === "") {
+                            errorMsg.style.display = "block";
+                            inputField.style.borderColor = "#ff6b6b";
+                            return;
+                        }
+                        participantId = value;
+                        jsPsych.finishTrial({ participant_id: participantId });
+                    };
+
+                    // クリック時の遷移
+                    if (btnSubmit) {
+                        btnSubmit.addEventListener('click', processSubmit);
+                    }
+
+                    // Enterキー押下時の遷移
+                    if (inputField) {
+                        inputField.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                processSubmit();
+                            }
+                        });
+                    }
+                }
+            };
+            timeline.push(participant_id_trial);
+
+            // 1. 教示画面
+            const instructions = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `
+                    <div class="instruction-box">
+                        <h1>ミュラー・リヤー錯視 実験</h1>
+                        <p>この実験では、錯視図形の長さを調整する心理測定を行います。</p>
+                        <p>各試行では、画面に2つの図形が上下に並んで表示されます。</p>
+                        <ul>
+                            <li><strong>上：標準刺激</strong>（矢羽が内向き、長さは<strong>固定</strong>です）</li>
+                            <li><strong>下：比較刺激</strong>（矢羽が外向き、長さは<strong>可変</strong>です）</li>
+                        </ul>
+                        <p><strong>【操作方法】</strong></p>
+                        <p>画面上の<strong>「◀ 短くする」「長くする ▶」ボタンをクリック（またはタップ）し続ける</strong>か、キーボードの<strong>左右の矢印キー</strong>を使って、下の比較刺激（外向き）の「中心の横線の長さ」が上の標準刺激と同じ長さに見えるように調整してください。</p>
+                        <ul>
+                            <li><strong>「◀ 短くする」ボタン / <kbd>←</kbd> キー</strong>：下の横線を短くする</li>
+                            <li><strong>「長くする ▶」ボタン / <kbd>→</kbd> キー</strong>：下の横線を長くする</li>
+                        </ul>
+                        <p>「これだ！」と思う（上下が同じ長さに見える）位置に調整できたら、画面の<strong>「決定して次へ」ボタンをクリック</strong>するか、キーボードの<strong>スペースキー</strong>を押して決定してください。</p>
+                        <p>実験は全部で <strong>12試行</strong> あります。準備ができたら<strong>任意のキー</strong>を押して開始してください。</p>
+                    </div>
+                `,
+                post_trial_gap: 1000
+            };
+            timeline.push(instructions);
+
+            // 2. 実験試行（ループにより12試行分を構築）
+            trial_conditions.forEach((condition, index) => {
+                
+                let keyState = { left: false, right: false };
+                let animationFrameId = null;
+                let lastTime = 0;
+                const ADJUST_SPEED = 0.15; // 1ミリ秒あたりに変化させるピクセル数
+
+                const trial = {
+                    type: jsPsychCanvasKeyboardResponse,
+                    canvas_size: [CANVAS_HEIGHT, CANVAS_WIDTH],
+                    // jsPsych独自のイベントリスナーをバイパス。NO_KEYSを設定し、on_load内で一元管理。
+                    choices: "NO_KEYS",
+                    
+                    // canvasを引数に受け取る刺激描画関数（初期状態を確実に描画）
+                    stimulus: function(canvas) {
+                        // 初期値のランダム生成：100px〜300pxの間
+                        currentComparisonLength = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+                        
+                        // 初期描画の徹底
+                        drawMullerLyer(
+                            canvas, 
+                            STANDARD_LENGTH, 
+                            currentComparisonLength, 
+                            condition.angle, 
+                            condition.fin_length
+                        );
+                    },
+
+                    // UIの安定性とDOM干渉防止のために、promptパラメータを利用
+                    prompt: function() {
+                        return `
+                            <div class="experiment-container">
+                                <div class="prompt-container">
+                                    <div class="trial-counter">試行: ${index + 1} / 12</div>
+                                    
+                                    <!-- 画面上での調整用コントロールパネル -->
+                                    <div class="adjustment-panel">
+                                        <button type="button" class="btn-ui btn-adjust-left" id="btn-adjust-left">◀ 短くする</button>
+                                        <button type="button" class="btn-ui btn-adjust-right" id="btn-adjust-right">長くする ▶</button>
+                                        <button type="button" class="btn-ui btn-adjust-space" id="btn-adjust-space">✓ 決定して次へ</button>
+                                    </div>
+
+                                    <div class="shortcut-guide">
+                                        キーボード操作： <kbd>←</kbd> (短く) &nbsp;&nbsp;|&nbsp;&nbsp; 
+                                        <kbd>→</kbd> (長く) &nbsp;&nbsp;|&nbsp;&nbsp; 
+                                        <kbd>Space</kbd> (決定)
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    },
+
+                    // キー長押し & 画面ボタンの長押し（連続変化）に対応するためのon_load処理
+                    on_load: function() {
+                        const canvas = document.querySelector('canvas');
+                        if (!canvas) return;
+
+                        // 画面上ボタン要素の取得
+                        const btnLeft = document.getElementById('btn-adjust-left');
+                        const btnRight = document.getElementById('btn-adjust-right');
+                        const btnSpace = document.getElementById('btn-adjust-space');
+
+                        // 試行終了のフラグ (重複終了を防ぐガード)
+                        let trial_finished = false;
+
+                        // 次の試行に進む共通処理
+                        const finishThisTrial = () => {
+                            if (trial_finished) return;
+                            trial_finished = true;
+
+                            // 自前アニメーションやリスナーをクリア
+                            if (jsPsych.getCurrentTrial().cleanup) {
+                                jsPsych.getCurrentTrial().cleanup();
+                            }
+
+                            // 各試行データを要件に合わせた構造（キー名）で jsPsych へ登録
+                            jsPsych.finishTrial({
+                                subject_id: participantId,
+                                timestamp: new Date().toISOString(),
+                                angle: condition.angle,
+                                wing_length: condition.fin_length, // 要件: wing_length
+                                standard_len: STANDARD_LENGTH,    // 要件: standard_len
+                                pse: Math.round(currentComparisonLength), // 要件: pse (最終的な長さ)
+                                error_amount: Math.round(currentComparisonLength) - STANDARD_LENGTH // 要件: error_amount (差分)
+                            });
+                        };
+
+                        // --- キーボード用のハンドラ ---
+                        const handleKeyDown = (e) => {
+                            if (e.key === 'ArrowLeft') {
+                                keyState.left = true;
+                                e.preventDefault();
+                            } else if (e.key === 'ArrowRight') {
+                                keyState.right = true;
+                                e.preventDefault();
+                            } else if (e.key === ' ' || e.code === 'Space') {
+                                // スペースキーが押されたら安全に次の試行へ進む
+                                e.preventDefault();
+                                finishThisTrial();
+                            }
+                        };
+
+                        const handleKeyUp = (e) => {
+                            if (e.key === 'ArrowLeft') {
+                                keyState.left = false;
+                            } else if (e.key === 'ArrowRight') {
+                                keyState.right = false;
+                            }
+                        };
+
+                        window.addEventListener('keydown', handleKeyDown);
+                        window.addEventListener('keyup', handleKeyUp);
+
+                        // --- 画面上ボタン用のハンドラ (マウス・タッチ両対応) ---
+                        const startLeft = (e) => { e.preventDefault(); keyState.left = true; };
+                        const stopLeft = (e) => { e.preventDefault(); keyState.left = false; };
+                        const startRight = (e) => { e.preventDefault(); keyState.right = true; };
+                        const stopRight = (e) => { e.preventDefault(); keyState.right = false; };
+
+                        // 左調整ボタンの登録
+                        if (btnLeft) {
+                            btnLeft.addEventListener('mousedown', startLeft);
+                            btnLeft.addEventListener('mouseup', stopLeft);
+                            btnLeft.addEventListener('mouseleave', stopLeft);
+                            btnLeft.addEventListener('touchstart', startLeft);
+                            btnLeft.addEventListener('touchend', stopLeft);
+                        }
+
+                        // 右調整ボタンの登録
+                        if (btnRight) {
+                            btnRight.addEventListener('mousedown', startRight);
+                            btnRight.addEventListener('mouseup', stopRight);
+                            btnRight.addEventListener('mouseleave', stopRight);
+                            btnRight.addEventListener('touchstart', startRight);
+                            btnRight.addEventListener('touchend', stopRight);
+                        }
+
+                        // 「決定して次へ」ボタンクリック/タップ時の処理を直接紐づけ
+                        const handleButtonSubmit = (e) => {
+                            e.preventDefault();
+                            finishThisTrial();
+                        };
+
+                        if (btnSpace) {
+                            btnSpace.addEventListener('click', handleButtonSubmit);
+                            btnSpace.addEventListener('touchstart', handleButtonSubmit);
+                        }
+
+                        // requestAnimationFrameを使用した滑らかな連続更新
+                        const updateLength = (timestamp) => {
+                            if (!lastTime) lastTime = timestamp;
+                            const elapsed = timestamp - lastTime;
+                            lastTime = timestamp;
+
+                            let changed = false;
+                            if (keyState.left) {
+                                // 最小値を 20px に制限
+                                currentComparisonLength = Math.max(20, currentComparisonLength - (ADJUST_SPEED * elapsed));
+                                changed = true;
+                            }
+                            if (keyState.right) {
+                                // 最大値を 500px に制限
+                                currentComparisonLength = Math.min(500, currentComparisonLength + (ADJUST_SPEED * elapsed));
+                                changed = true;
+                            }
+
+                            if (changed) {
+                                // 再描画の呼び出し
+                                drawMullerLyer(
+                                    canvas,
+                                    STANDARD_LENGTH,
+                                    currentComparisonLength,
+                                    condition.angle,
+                                    condition.fin_length
+                                );
+                            }
+
+                            animationFrameId = requestAnimationFrame(updateLength);
+                        };
+
+                        animationFrameId = requestAnimationFrame(updateLength);
+
+                        // 終了時のクリーンアップ処理（リスナーの解除、アニメーションフレームの破棄）
+                        jsPsych.getCurrentTrial().cleanup = () => {
+                            window.removeEventListener('keydown', handleKeyDown);
+                            window.removeEventListener('keyup', handleKeyUp);
+                            
+                            // ボタン用イベントの解除
+                            if (btnLeft) {
+                                btnLeft.removeEventListener('mousedown', startLeft);
+                                btnLeft.removeEventListener('mouseup', stopLeft);
+                                btnLeft.removeEventListener('mouseleave', stopLeft);
+                                btnLeft.removeEventListener('touchstart', startLeft);
+                                btnLeft.removeEventListener('touchend', stopLeft);
+                            }
+                            if (btnRight) {
+                                btnRight.removeEventListener('mousedown', startRight);
+                                btnRight.removeEventListener('mouseup', stopRight);
+                                btnRight.removeEventListener('mouseleave', stopRight);
+                                btnRight.removeEventListener('touchstart', startRight);
+                                btnRight.removeEventListener('touchend', stopRight);
+                            }
+                            if (btnSpace) {
+                                btnSpace.removeEventListener('click', handleButtonSubmit);
+                                btnSpace.removeEventListener('touchstart', handleButtonSubmit);
+                            }
+                            if (animationFrameId) {
+                                cancelAnimationFrame(animationFrameId);
+                            }
+                        };
+                    }
+                };
+                timeline.push(trial);
+            });
+
+            // 全実験試行終了後に呼び出される関数
+            function processFinalSequence() {
+                const targetElement = document.getElementById('jspsych-target');
+                
+                // 1. 画面を一時的に「送信中...」のステータスに切り替える
+                targetElement.innerHTML = `
+                    <div class="results-box">
+                        <h2>実験終了</h2>
+                        <div class="loading-container">
+                            <div class="spinner"></div>
+                            <p style="font-size: 18px; font-weight: bold; color: #4dabf7;">実験データを送信しています。少々お待ちください...</p>
+                            <p style="font-size: 14px; color: #aaa;">サーバー（GAS）に反応データを自動送信しています...</p>
+                        </div>
+                    </div>
+                `;
+
+                // 2. 反応データの抽出・整形
+                const allData = jsPsych.data.get();
+                const validTrials = allData.filter({trial_type: 'canvas-keyboard-response'}).values();
+                
+                // 構造化データの作成
+                const formattedPayload = validTrials.map(trial => {
+                    return {
+                        subject_id: trial.subject_id || participantId,
+                        timestamp: trial.timestamp || new Date().toISOString(),
+                        angle: trial.angle,
+                        wing_length: trial.wing_length,
+                        standard_len: trial.standard_len,
+                        pse: trial.pse,
+                        error_amount: trial.error_amount
+                    };
+                });
+
+                // 3. fetchによるGAS送信処理 (CORS対策とリダイレクト追従の最適化)
+                // 'text/plain'によるシンプルリクエスト＋'redirect: follow'を明示することで、ブラウザのCORS制限とGASリダイレクトの問題を確実にバイパスします。
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8' // シンプルリクエストでプリフライトを回避
+                    },
+                    body: JSON.stringify(formattedPayload),
+                    redirect: 'follow' // GASウェブアプリが返すリダイレクト(302)に確実に追従する
+                })
+                .then(response => {
+                    // Googleサーバーがリクエストを受け取り、リダイレクト処理まで成功した場合
+                    console.log("Data transmitted successfully:", response);
+                    showResults(allData, true);
+                })
+                .catch(error => {
+                    console.error("Transmitting error:", error);
+                    showResults(allData, false);
+                });
+            }
+
+            // CSVファイルをブラウザでダウンロードする関数（万が一のバックアップ用）
+            function downloadCSV(data) {
+                try {
+                    const results = data.filter({trial_type: 'canvas-keyboard-response'}).values();
+                    let csvRows = ["subject_id,timestamp,angle,wing_length,standard_len,pse,error_amount"];
+                    results.forEach((r) => {
+                        csvRows.push(`${r.subject_id || participantId},${r.timestamp || new Date().toISOString()},${r.angle},${r.wing_length},${r.standard_len},${r.pse},${r.error_amount}`);
+                    });
+                    const csvString = csvRows.join("\n");
+                    
+                    // 日本語文字化けを防ぐためにUTF-8 BOMを追加
+                    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+                    const blob = new Blob([bom, csvString], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    
+                    if (link.download !== undefined) {
+                        const url = URL.createObjectURL(blob);
+                        link.setAttribute("href", url);
+                        link.setAttribute("download", `muller_lyer_results_${participantId}_${Date.now()}.csv`);
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                } catch (e) {
+                    console.error("CSV保存に失敗しました:", e);
+                }
+            }
+
+            // 終了後に結果テーブルを画面中央にレンダリングする関数
+            function showResults(data, sendSuccess) {
+                const results = data.filter({trial_type: 'canvas-keyboard-response'}).values();
+                
+                // 条件ごとの平均値集計
+                const summary = {};
+                results.forEach(r => {
+                    const key = `角度 ${r.angle}° / 羽長 ${r.wing_length}px`;
+                    if (!summary[key]) {
+                        summary[key] = { sum: 0, count: 0 };
+                    }
+                    summary[key].sum += r.pse;
+                    summary[key].count++;
+                });
+
+                let summaryHtml = '';
+                for (let condition in summary) {
+                    const avg = (summary[condition].sum / summary[condition].count).toFixed(1);
+                    const illusionAvg = (avg - STANDARD_LENGTH).toFixed(1);
+                    summaryHtml += `
+                        <tr>
+                            <td>${condition}</td>
+                            <td>${STANDARD_LENGTH} px</td>
+                            <td>${avg} px</td>
+                            <td style="color: ${illusionAvg > 0 ? '#ff6b6b' : '#4dabf7'}">${illusionAvg > 0 ? '+' : ''}${illusionAvg} px</td>
+                        </tr>
+                    `;
+                }
+
+                // 送信状況（バナー）の生成
+                let bannerHtml = "";
+                if (sendSuccess === true) {
+                    bannerHtml = `
+                        <div class="save-status-banner" style="background-color: #2b8a3e;">
+                            <span>✓ <strong>実験終了（保存完了）:</strong> 反応データはスプレッドシート（サーバー）に正常に送信・保存されました。</span>
+                        </div>
+                    `;
+                } else if (sendSuccess === false) {
+                    bannerHtml = `
+                        <div class="save-status-banner" style="background-color: #d9480f;">
+                            <span>⚠️ <strong>送信エラー:</strong> サーバーへの自動保存に失敗しました。お手数ですが、以下の青いボタンから手動でCSVデータを保存してください。</span>
+                        </div>
+                    `;
+                } else {
+                    bannerHtml = `
+                        <div class="save-status-banner">
+                            <span>⚠️ <strong>データは未保存です:</strong> 以下の青いボタンをクリックして、実験データを保存してください。</span>
+                        </div>
+                    `;
+                }
+
+                // グローバルなtriggerManualDownloadの関数をwindowにバインドしてボタンから動かせるようにする
+                window.triggerManualDownload = function() {
+                    downloadCSV(data);
+                    const banner = document.querySelector('.save-status-banner');
+                    if (banner) {
+                        banner.style.backgroundColor = '#2b8a3e'; // 緑色に変更
+                        banner.innerHTML = '<span>✓ <strong>保存完了:</strong> 実験結果（CSVファイル）がお手元のデバイスへ保存されました。</span>';
+                    }
+                };
+
+                const targetElement = document.getElementById('jspsych-target');
+                targetElement.innerHTML = `
+                    <div class="results-box">
+                        <h2>実験終了 (結果の報告)</h2>
+                        
+                        <p style="font-size: 16px; font-weight: bold; color: #a5d8ff; margin-bottom: 20px;">
+                            実験にご協力いただき、誠にありがとうございました。
+                        </p>
+
+                        <div style="font-size: 15px; color: #ffffff; margin-bottom: 15px; background: #333; display: inline-block; padding: 5px 15px; border-radius: 4px;">
+                            参加者ID: <strong>${participantId}</strong>
+                        </div>
+
+                        <!-- データ送信・保存ステータスバナー -->
+                        ${bannerHtml}
+
+                        <div style="margin-bottom: 25px;">
+                            <button class="btn-download" onclick="window.triggerManualDownload()">
+                                📥 CSVデータを手動で保存
+                            </button>
+                        </div>
+
+                        <hr style="border: none; border-top: 1px dashed #555; margin: 30px 0;">
+
+                        <h3 style="color: #e9ecef; font-size: 18px; margin-bottom: 10px;">【測定データ要約】</h3>
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>実験条件</th>
+                                    <th>標準刺激（固定長）</th>
+                                    <th>調整された長さ平均 (PSE)</th>
+                                    <th>平均錯視量（差分）</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${summaryHtml}
+                            </tbody>
+                        </table>
+                        
+                        <p style="margin-top: 25px; font-size: 13px; color: #aaa; text-align: left; line-height: 1.6;">
+                            <strong>解説：</strong><br>
+                            錯視量がプラスに大きいほど、「外向きの羽」に引きずられて、水平線を実際よりも短いと判断し、長く引き伸ばして調整した（錯視の影響を強く受けた）ことを示します。通常は「角度がより鋭く（15度）」、かつ「羽の長さがより長い（50px）」場合に錯視量が最大化するとされています。
+                        </p>
+                    </div>
+                `;
+            }
+
+            // 実験を開始
+            jsPsych.run(timeline);
+        });
+    </script>
+</body>
+</html>
