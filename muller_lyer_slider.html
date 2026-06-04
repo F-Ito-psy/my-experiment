@@ -100,11 +100,70 @@
       border-radius: 8px;
       background-color: #ffffff;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+      max-width: 100%;
+      height: auto;
     }
 
     /* スライダーコンテナ */
     .jspsych-canvas-slider-response-container {
       margin-top: 20px;
+      width: 100%;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      /* スマートフォンで操作中に画面全体がスクロールしたり動いたりするのを防ぐ */
+      touch-action: none; 
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* スライダー本体のカスタマイズ（スマートフォン対応） */
+    .jspsych-canvas-slider-response-container input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 12px; /* レールを少し太くしてタップしやすく */
+      background: #e2e8f0;
+      border-radius: 6px;
+      outline: none;
+      margin: 20px 0;
+      /* スライダー領域を触っても画面がドラッグされないようにする */
+      touch-action: none;
+    }
+
+    /* スライダーのつまみ（ノブ）のカスタマイズ（Webkit系ブラウザ：Chrome, Safari, Edge） */
+    .jspsych-canvas-slider-response-container input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 32px;  /* つまみを大きく（18px程度から32pxに拡大） */
+      height: 32px; /* つまみを大きく */
+      border-radius: 50%;
+      background: #0076ff;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.15s, transform 0.1s;
+    }
+
+    .jspsych-canvas-slider-response-container input[type="range"]::-webkit-slider-thumb:active {
+      background: #005ecb;
+      transform: scale(1.15); /* 触っている間はさらに大きく見せる */
+    }
+
+    /* スライダーのつまみ（Firefox用） */
+    .jspsych-canvas-slider-response-container input[type="range"]::-moz-range-thumb {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      background: #0076ff;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.15s, transform 0.1s;
+    }
+
+    .jspsych-canvas-slider-response-container input[type="range"]::-moz-range-thumb:active {
+      background: #005ecb;
+      transform: scale(1.15);
     }
 
     /* 結果表示テーブル */
@@ -253,7 +312,7 @@
           <p>
             この実験では、視覚的な錯視の大きさを調整法を用いて測定します。<br><br>
             画面上に、上下に並んだ2本の線（矢印のような羽がついた図形）が表示されます。<br><br>
-            <strong>・上の線：</strong> 長さが固定されている基準の線（内向きの羽）です。<br>
+            <strong>・上の線：</strong> 長さが固定されている基準 of 線（内向きの羽）です。<br>
             <strong>・下の線：</strong> スライダーを動かすことで長さを自由に変化させられる比較用の線（外向きの羽）です。<br><br>
             画面下部のスライダーをドラッグして、<strong>「下の線」の長さが「上の線」と同じ長さに見えるように</strong>調整してください。<br>
             調整が完了したら、スライダーの下にある「決定」ボタンを押して次の試行に進んでください。<br><br>
