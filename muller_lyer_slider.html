@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Müller-Lyer Illusion Experiment (Method of Adjustment)</title>
+  <title>ミュラー・リヤー錯視実験 (調整法)</title>
   
   <!-- jsPsych 7.3.0 core styling and scripts from jsdelivr -->
   <link href="https://cdn.jsdelivr.net/npm/jspsych@7.3.0/css/jspsych.css" rel="stylesheet" type="text/css" />
@@ -19,12 +19,13 @@
       height: 100%;
       margin: 0;
       padding: 0;
-      background-color: #f7f9fa;
+      background-color: #f0f4f8;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-      color: #333;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', 'Helvetica Neue', Arial, sans-serif;
+      color: #2d3748;
+      -webkit-font-smoothing: antialiased;
     }
 
     .jspsych-display-element {
@@ -40,25 +41,28 @@
     .experiment-container {
       background: #ffffff;
       padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      max-width: 700px;
-      width: 90%;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      max-width: 680px;
+      width: 92%;
       text-align: center;
       box-sizing: border-box;
     }
 
     h1 {
-      font-size: 24px;
-      margin-bottom: 20px;
-      color: #1a1a1a;
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #1a202c;
+      letter-spacing: -0.5px;
     }
 
     p {
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 24px;
+      font-size: 1.15rem;
+      line-height: 1.8;
+      margin-bottom: 28px;
       text-align: left;
+      color: #4a5568;
     }
 
     .center-text {
@@ -67,51 +71,55 @@
 
     /* ボタンのカスタマイズ */
     .jspsych-btn {
-      padding: 12px 30px;
-      font-size: 16px;
-      border-radius: 6px;
-      background-color: #0076ff;
+      padding: 14px 36px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      background-color: #3182ce;
       color: white;
       border: none;
       cursor: pointer;
-      transition: background-color 0.2s, transform 0.1s;
+      box-shadow: 0 4px 6px rgba(49, 130, 206, 0.2);
+      transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
     }
 
     .jspsych-btn:hover {
-      background-color: #005ecb;
+      background-color: #2b6cb0;
+      box-shadow: 0 6px 12px rgba(49, 130, 206, 0.3);
     }
 
     .jspsych-btn:active {
-      transform: scale(0.98);
+      transform: scale(0.97);
+      box-shadow: 0 2px 4px rgba(49, 130, 206, 0.2);
     }
 
     /* 試行数表示 (prompt) */
     .trial-counter {
-      font-size: 18px;
-      font-weight: bold;
-      color: #555;
-      margin-bottom: 15px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #718096;
+      margin-bottom: 12px;
       text-align: center;
+      letter-spacing: 0.5px;
     }
 
     /* キャンバス周り */
     canvas {
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border-radius: 12px;
       background-color: #ffffff;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
       max-width: 100%;
       height: auto;
     }
 
     /* スライダーコンテナ */
     .jspsych-canvas-slider-response-container {
-      margin-top: 20px;
+      margin-top: 24px;
       width: 100%;
-      max-width: 500px;
+      max-width: 440px;
       margin-left: auto;
       margin-right: auto;
-      /* スマートフォンで操作中に画面全体がスクロールしたり動いたりするのを防ぐ */
       touch-action: none; 
       user-select: none;
       -webkit-user-select: none;
@@ -121,48 +129,48 @@
     .jspsych-canvas-slider-response-container input[type="range"] {
       -webkit-appearance: none;
       appearance: none;
-      width: 100%;
-      height: 12px; /* レールを少し太くしてタップしやすく */
+      width: 90%;
+      max-width: 400px;
+      height: 10px; /* レールを少し太く */
       background: #e2e8f0;
       border-radius: 6px;
       outline: none;
-      margin: 20px 0;
-      /* スライダー領域を触っても画面がドラッグされないようにする */
+      margin: 24px 0;
       touch-action: none;
     }
 
-    /* スライダーのつまみ（ノブ）のカスタマイズ（Webkit系ブラウザ：Chrome, Safari, Edge） */
+    /* スライダーのつまみ（ノブ：Chrome, Safari, Edge） */
     .jspsych-canvas-slider-response-container input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 32px;  /* つまみを大きく（18px程度から32pxに拡大） */
-      height: 32px; /* つまみを大きく */
+      width: 36px;  /* つまみをさらにタップしやすく拡大 */
+      height: 36px; 
       border-radius: 50%;
-      background: #0076ff;
+      background: #3182ce;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 3px 8px rgba(49, 130, 206, 0.3);
       transition: background-color 0.15s, transform 0.1s;
     }
 
     .jspsych-canvas-slider-response-container input[type="range"]::-webkit-slider-thumb:active {
-      background: #005ecb;
-      transform: scale(1.15); /* 触っている間はさらに大きく見せる */
+      background: #2b6cb0;
+      transform: scale(1.15); /* タッチ中は大きく */
     }
 
     /* スライダーのつまみ（Firefox用） */
     .jspsych-canvas-slider-response-container input[type="range"]::-moz-range-thumb {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border: none;
       border-radius: 50%;
-      background: #0076ff;
+      background: #3182ce;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 3px 8px rgba(49, 130, 206, 0.3);
       transition: background-color 0.15s, transform 0.1s;
     }
 
     .jspsych-canvas-slider-response-container input[type="range"]::-moz-range-thumb:active {
-      background: #005ecb;
+      background: #2b6cb0;
       transform: scale(1.15);
     }
 
@@ -170,54 +178,57 @@
     .results-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
-      font-size: 14px;
+      margin-top: 24px;
+      font-size: 15px;
     }
 
     .results-table th, .results-table td {
       border: 1px solid #e2e8f0;
-      padding: 10px;
+      padding: 12px;
       text-align: center;
     }
 
     .results-table th {
-      background-color: #f8fafc;
+      background-color: #f7fafc;
       font-weight: bold;
+      color: #4a5568;
     }
 
     /* ID入力画面（jsPsychSurveyText）用のスタイル最適化 */
     #jspsych-survey-text-form {
       background: #ffffff;
       padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      max-width: 600px;
-      width: 90%;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      max-width: 550px;
+      width: 92%;
       text-align: center;
       margin: 0 auto;
       box-sizing: border-box;
     }
     .jspsych-survey-text-question {
-      margin-bottom: 24px;
+      margin-bottom: 28px;
       text-align: left;
     }
     .jspsych-survey-text-question label {
-      font-size: 16px;
-      color: #333;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #2d3748;
     }
     .jspsych-survey-text-question input[type="text"] {
       width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      border: 1px solid #cbd5e0;
-      border-radius: 6px;
+      padding: 14px;
+      font-size: 1.1rem;
+      border: 1.5px solid #cbd5e0;
+      border-radius: 8px;
       box-sizing: border-box;
-      margin-top: 10px;
+      margin-top: 12px;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     .jspsych-survey-text-question input[type="text"]:focus {
-      border-color: #0076ff;
+      border-color: #3182ce;
+      box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
     }
   </style>
 </head>
@@ -289,8 +300,8 @@
       type: SurveyText,
       questions: [
         {
-          prompt: '<strong>参加者ID</strong>を入力してください（例: sub01）：',
-          placeholder: '任意の半角英数字を入力してください',
+          prompt: 'ニックネームや出席番号などを入力してください（例: sub01）',
+          placeholder: '半角英数字で入力してください',
           required: true,
           name: 'subject_id'
         }
@@ -303,20 +314,20 @@
     };
     timeline.push(participant_info);
 
-    // --- 1. 教示画面 ---
+    // --- 1. 教示画面 (小学生にもわかりやすい表現へ変更) ---
     const instructions = {
       type: HtmlKeyboardResponse,
       stimulus: `
         <div class="experiment-container">
-          <h1>ミュラー・リヤー錯視実験</h1>
+          <h1>見てみよう・長さのテスト</h1>
           <p>
-            この実験では、視覚的な錯視の大きさを調整法を用いて測定します。<br><br>
-            画面上に、上下に並んだ2本の線（矢印のような羽がついた図形）が表示されます。<br><br>
-            <strong>・上の線：</strong> 長さが固定されている基準 of 線（内向きの羽）です。<br>
-            <strong>・下の線：</strong> スライダーを動かすことで長さを自由に変化させられる比較用の線（外向きの羽）です。<br><br>
-            画面下部のスライダーをドラッグして、<strong>「下の線」の長さが「上の線」と同じ長さに見えるように</strong>調整してください。<br>
-            調整が完了したら、スライダーの下にある「決定」ボタンを押して次の試行に進んでください。<br><br>
-            試行は全部で <strong>12回</strong> あります。
+            ご協力ありがとうございます。これから短い「目の見え方」のテストを行います。<br><br>
+            画面に２つの<b>「矢印のような形（図形）」</b>が上下に並んで表示されます。<br><br>
+            ・<b>上の図形：</b> 長さがずっと変わりません。<br>
+            ・<b>下の図形：</b> スライダーを動かすと、長さを自由に変えることができます。<br><br>
+            画面の下にある丸いつまみ（スライダー）を左右に動かして、<b>「上の横線」と「下の横線」がピッタリ同じ長さ</b>に見えるように動かしてください。<br><br>
+            「同じ長さになった！」と思ったら、一番下にある<b>【決定】</b>ボタンを押してください。次のテストに進みます。<br><br>
+            テストは全部で <b>12回</b> あります。
           </p>
           <button class="jspsych-btn" id="start-btn">実験を始める</button>
         </div>
@@ -332,7 +343,7 @@
     timeline.push(instructions);
 
     // --- 共通描画関数 ---
-    // 初期描画時とスライダー変更時のリアルタイム更新をこの関数で行う
+    // 初期描画時とスライダー変更時のリアルタイム更新をこの関数で行う（既存ロジック厳守）
     function drawMullerLyer(canvas, comparisonLength, trial_config) {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
@@ -432,10 +443,10 @@
         button_label: '決定',
         prompt: `
           <div class="trial-counter">
-            Trial ${index + 1} / ${total_trials}
+            現在 ${index + 1} 回目 / 全 ${total_trials} 回
           </div>
-          <p class="center-text" style="margin-bottom: 10px;">
-            スライダーを調整して、下の線の長さが上の線と同じに見えるようにしてください。
+          <p class="center-text" style="margin-bottom: 12px; font-size: 1.1rem; font-weight: bold; color: #4a5568;">
+            スライダーをうごかして、下の線を上の線とピッタリ同じ長さにしてください。
           </p>
         `,
         data: {
@@ -472,7 +483,7 @@
           // 物理的長さ(200px)との誤差（錯視量）を計算
           data.illusion_error = data.response - 200;
 
-          // データ構造定義（追加項目）
+          // データ構造定義（追加項目・既存の構造を厳守）
           data.subject_id = subject_id;
           data.timestamp = new Date().toISOString();
           data.wing_length = trial_config.feather_length; // 羽の長さ
@@ -487,14 +498,14 @@
 
     // --- 3. 自動送信 & 結果表示処理 ---
     
-    // GASへのデータ送信処理
+    // GASへのデータ送信処理（既存URLとロジックを完全厳守）
     function sendDataToGAS(experiment_data) {
       const statusDiv = document.getElementById('upload-status');
       if (!statusDiv) return;
 
       statusDiv.innerHTML = `
-        <div style="background-color: #ebf8ff; border: 1px solid #bee3f8; color: #2b6cb0; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px;">
-          ⌛ 反応データを自動送信中です。そのまましばらくお待ちください...
+        <div style="background-color: #ebf8ff; border: 1px solid #bee3f8; color: #2b6cb0; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; font-size: 15px;">
+          ⌛ データを保存しています。しばらくそのままお待ちください...
         </div>
       `;
 
@@ -516,19 +527,19 @@
       })
       .then(result => {
         statusDiv.innerHTML = `
-          <div style="background-color: #f0fff4; border: 1px solid #c6f6d5; color: #2f855a; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span>✓</span> データのサーバー保存が正常に完了しました！
+          <div style="background-color: #f0fff4; border: 1px solid #c6f6d5; color: #2f855a; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px;">
+            <span>✓</span> データの保存が完了しました！ありがとうございました。
           </div>
         `;
       })
       .catch(error => {
         console.error("Transmission failed:", error);
         statusDiv.innerHTML = `
-          <div style="background-color: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px; box-sizing: border-box;">
-            <strong style="display: block; margin-bottom: 5px;">⚠ データの自動送信に失敗しました</strong>
-            <span style="font-size: 13px; color: #9b2c2c; display: block; line-height: 1.4;">理由: ネットワークに未接続か、送信先URLで制限が発生している可能性があります。(${error.message})</span>
+          <div style="background-color: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px; box-sizing: border-box; font-size: 14px;">
+            <strong style="display: block; margin-bottom: 5px;">⚠ データの保存に失敗しました</strong>
+            <span style="font-size: 13px; color: #9b2c2c; display: block; line-height: 1.4;">理由: ネットワークに接続されていないか、制限が発生している可能性があります。(${error.message})</span>
             <div style="margin-top: 12px; display: flex; gap: 10px;">
-              <button class="jspsych-btn" id="retry-btn" style="padding: 6px 15px; font-size: 13px; background-color: #e53e3e; color: white;">再送信を試みる</button>
+              <button class="jspsych-btn" id="retry-btn" style="padding: 8px 20px; font-size: 13px; background-color: #e53e3e; color: white; box-shadow: none;">再送信する</button>
             </div>
           </div>
         `;
@@ -560,7 +571,7 @@
         summary[key].errors.push(d.illusion_error);
         summary[key].adjusted_lengths.push(d.adjusted_length);
 
-        // 指定されたデータ構造に整形
+        // 指定されたデータ構造に整形（既存ロジック厳守）
         payload_data.push({
           subject_id: d.subject_id,
           timestamp: d.timestamp,
@@ -589,17 +600,19 @@
         `;
       }
 
-      // 結果表示用のHTML
+      // 結果表示用のHTML（フォントサイズやデザインを最適化）
       const resultsHtml = `
-        <div class="experiment-container" style="max-width: 800px; text-align: left;">
-          <h1 style="text-align: center;">実験が終了しました！</h1>
+        <div class="experiment-container" style="max-width: 780px; text-align: left;">
+          <h1 style="text-align: center; margin-bottom: 20px;">テストがおわりました！</h1>
           
           <!-- 自動送信ステータスインジケータ -->
           <div id="upload-status"></div>
 
-          <p class="center-text" style="font-size: 15px;">
-            ご協力ありがとうございました。測定された調整結果の平均値は以下の通りです。<br>
-            （比較刺激は外向き羽（＜ーーー＞）のため、錯視により通常は「実際より短く」見えます。そのため、標準刺激（200px）と同じに見えるように調整した結果、調整後の長さが200pxより大きくなる傾向があります。）
+          <p class="center-text" style="font-size: 1rem; color: #4a5568; margin-bottom: 24px;">
+            ご協力ありがとうございました。あなたが調整した結果の平均値は以下の通りです。<br>
+            <span style="font-size: 0.9rem; color: #718096; display: block; margin-top: 8px;">
+              ※下の図形は外向きの羽になっているため、目の錯覚（錯視）により「実際よりも短く」見えやすくなります。そのため、上の線と同じ長さに見えるように調整すると、実際の長さ（200px）よりも少し長くなる（プラスの誤差になる）傾向があります。
+            </span>
           </p>
           
           <table class="results-table">
@@ -607,9 +620,9 @@
               <tr>
                 <th>羽の角度</th>
                 <th>羽の長さ</th>
-                <th>標準刺激の長さ</th>
-                <th>調整された平均長さ</th>
-                <th>平均誤差（錯視量）</th>
+                <th>実際の長さ</th>
+                <th>調整した平均の長さ</th>
+                <th>平均のずれ（錯覚の量）</th>
               </tr>
             </thead>
             <tbody>
@@ -617,9 +630,9 @@
             </tbody>
           </table>
 
-          <div style="text-align: center; margin-top: 30px;">
-            <p class="center-text" style="font-size: 14px; color: #666;">
-              ※生データを保存、送信する場合は、以下のボタンでCSV形式などでも出力できます。
+          <div style="text-align: center; margin-top: 32px;">
+            <p class="center-text" style="font-size: 14px; color: #718096;">
+              ※お手元の端末にすべてのデータを保存したい場合は、以下のボタンからCSVファイルとしてダウンロードできます。
             </p>
             <button class="jspsych-btn" id="download-btn">データをダウンロード(CSV)</button>
           </div>
