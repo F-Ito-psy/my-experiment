@@ -16,8 +16,8 @@
             --primary-color: #5c6bc0;     /* 青みの強い薄紫 */
             --primary-hover: #4552b2;     /* ホバー時の濃い紫 */
             --primary-light: #e8eaf6;     /* 薄い背景用 */
-            --text-main: #2c304d;         /* メイン文字色（少し紫がかったダークグレー） */
-            --text-sub: #5a5f7d;          /* サブ文字色 */
+            --text-main: #2c304d;          /* メイン文字色（少し紫がかったダークグレー） */
+            --text-sub: #5a5f7d;           /* サブ文字色 */
             --card-bg: #ffffff;
             --shadow: 0 4px 20px rgba(92, 107, 192, 0.08);
             --shadow-hover: 0 10px 30px rgba(92, 107, 192, 0.18);
@@ -47,7 +47,7 @@
         /* コンテナ（中央寄せ＆余白の最大幅設定） */
         .container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px; /* 実験が4つに増えるため、少し最大幅を広げてゆとりを持たせます */
             margin: 0 auto;
             padding: 0 24px;
         }
@@ -105,7 +105,7 @@
             font-weight: 500;
         }
 
-        /* 実験リストのグリッドレイアウト（レスポンシブ） */
+        /* 実験リストのグリッドレイアウト（レスポンシブ：4枚のカードが綺麗に並ぶように調整） */
         .experiment-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -114,7 +114,13 @@
 
         @media (min-width: 768px) {
             .experiment-grid {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .experiment-grid {
+                grid-template-columns: repeat(4, 1fr); /* 4カラムにして横一列にスッキリ並べます */
             }
         }
 
@@ -123,7 +129,7 @@
             background-color: var(--card-bg);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            padding: 40px 30px;
+            padding: 40px 24px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -145,6 +151,12 @@
             transition: var(--transition);
         }
 
+        /* 本番用の実験カードを強調するスタイリング */
+        .experiment-card.card-featured::before {
+            background-color: var(--primary-color);
+            height: 6px;
+        }
+
         /* カードホバー時のアニメーション（浮き上がりと影の変化） */
         .experiment-card:hover {
             transform: translateY(-8px);
@@ -160,61 +172,133 @@
             margin-bottom: 20px;
         }
 
+        /* タグコンテナ：高さをピクセル単位で完全に揃えるためのフレックスボックス */
+        .tags-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        /* 実験IDタグ */
         .experiment-id {
-            display: inline-block;
-            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem; /* 文字サイズを統一 */
             font-weight: 700;
             color: var(--primary-color);
             background-color: var(--primary-light);
-            padding: 4px 12px;
+            padding: 0 12px;
             border-radius: 20px;
-            margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            height: 24px; /* 高さを24pxに固定 */
+            line-height: 1;
+            box-sizing: border-box;
+        }
+
+        /* 特集タグ（本番用実験向け） */
+        .experiment-tag-featured {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem; /* 文字サイズを統一 */
+            font-weight: 700;
+            color: #ffffff;
+            background-color: #ff7043; /* 鮮やかなオレンジで本番用をアピール */
+            padding: 0 10px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            height: 24px; /* 高さを24pxに固定して一致させる */
+            line-height: 1;
+            box-sizing: border-box;
         }
 
         .experiment-name {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--text-main);
             line-height: 1.4;
         }
 
         .experiment-desc {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: var(--text-sub);
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             flex-grow: 1;
+            line-height: 1.6;
         }
 
-        /* カードアクションボタン */
+        /* カードアクションボタンのコンテナ */
         .btn-container {
             margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px; /* 縦並びの隙間 */
         }
 
+        /* 共通ボタンスタイル */
         .btn {
             display: block;
             width: 100%;
             text-align: center;
             text-decoration: none;
-            padding: 14px 20px;
-            background-color: var(--primary-color);
-            color: #ffffff;
-            font-weight: 500;
+            padding: 12px 16px;
             border-radius: 30px;
-            font-size: 0.95rem;
-            box-shadow: 0 4px 12px rgba(92, 107, 192, 0.2);
+            font-size: 0.9rem;
+            font-weight: 500;
             transition: var(--transition);
+            box-sizing: border-box;
         }
 
-        /* ボタンホバー時 */
-        .btn:hover {
+        /* 1. メインの実験開始ボタン */
+        .btn-main {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(92, 107, 192, 0.2);
+        }
+
+        .btn-main:hover {
             background-color: var(--primary-hover);
             transform: translateY(-2px);
             box-shadow: 0 6px 18px rgba(92, 107, 192, 0.3);
         }
 
-        /* 最初の実験（実験0）を控えめにする、またはボタンの特別バリエーション */
+        /* 2. プレレジ用の白抜きボタン */
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        /* 3. 履歴確認用の控えめなテキスト＆アイコン風ボタン */
+        .btn-text-link {
+            background-color: transparent;
+            color: var(--text-sub);
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            text-decoration: underline;
+        }
+
+        .btn-text-link:hover {
+            color: var(--primary-color);
+            background-color: rgba(92, 107, 192, 0.05);
+            text-decoration: none;
+        }
+
+        /* はじめてのWebページ（実験0）用ボタン */
         .card-exp0 .btn {
             background-color: transparent;
             color: var(--primary-color);
@@ -292,7 +376,9 @@
                 <!-- 実験0：はじめてのWebページ -->
                 <div class="experiment-card card-exp0">
                     <div class="card-header">
-                        <span class="experiment-id">Experiment 0</span>
+                        <div class="tags-container">
+                            <span class="experiment-id">Experiment 0</span>
+                        </div>
                         <h3 class="experiment-name">はじめてのWebページ</h3>
                     </div>
                     <p class="experiment-desc">
@@ -306,28 +392,60 @@
                 <!-- 実験1：ストループ課題 -->
                 <div class="experiment-card">
                     <div class="card-header">
-                        <span class="experiment-id">Experiment 1</span>
+                        <div class="tags-container">
+                            <span class="experiment-id">Experiment 1</span>
+                        </div>
                         <h3 class="experiment-name">ストループ課題</h3>
                     </div>
                     <p class="experiment-desc">
-                        「文字の意味」と「文字の色」の干渉を調べる、簡単なキーボード入力のテストです。（所要時間：約3分）
+                        「文字の意味」と「文字の色」の干渉を調べる、簡単なキーボード入力 of テストです。（所要時間：約3分）
                     </p>
                     <div class="btn-container">
-                        <a href="stroop.html" class="btn">実験1に参加する</a>
+                        <a href="stroop.html" class="btn btn-main">実験1に参加する</a>
                     </div>
                 </div>
 
                 <!-- 実験2：ミュラー・リヤー錯視 -->
                 <div class="experiment-card">
                     <div class="card-header">
-                        <span class="experiment-id">Experiment 2</span>
+                        <div class="tags-container">
+                            <span class="experiment-id">Experiment 2</span>
+                        </div>
                         <h3 class="experiment-name">ミュラー・リヤー錯視</h3>
                     </div>
                     <p class="experiment-desc">
                         図形の長さが違って見える錯覚を測る、スライダーを使った視覚のテストです。（所要時間：約2分）
                     </p>
                     <div class="btn-container">
-                        <a href="muller_lyer_final.html" class="btn">実験2に参加する</a>
+                        <a href="muller_lyer_final.html" class="btn btn-main">実験2に参加する</a>
+                    </div>
+                </div>
+
+                <!-- 実験3：N-Back実験（本番用の新規カード） -->
+                <div class="experiment-card card-featured">
+                    <div class="card-header">
+                        <div class="tags-container">
+                            <span class="experiment-id">Experiment 3</span>
+                            <span class="experiment-tag-featured">本番用</span>
+                        </div>
+                        <h3 class="experiment-name">N-Back実験</h3>
+                    </div>
+                    <p class="experiment-desc">
+                        一時的な記憶の保持・更新能力（ワーキングメモリ）を測定する、本番用の認知実験課題です。（所要時間：約5分）
+                    </p>
+                    <div class="btn-container">
+                        <!-- 実験参加ボタン（最重要アクション：目立つメインカラー） -->
+                        <a href="n_back.html" class="btn btn-main">実験3に参加する</a>
+                        
+                        <!-- プレレジ登録文書へのリンク（二番目に重要：落ち着いた白抜きデザイン） -->
+                        <a href="https://github.com/F-Ito-psy/my-experiment/blob/main/preregistration.md" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+                            プレレジを確認する
+                        </a>
+                        
+                        <!-- 変更履歴・タイムスタンプへのリンク（証拠用：一番控えめなテキストリンクスタイル） -->
+                        <a href="https://github.com/F-Ito-psy/my-experiment/commits/main/preregistration.md" target="_blank" rel="noopener noreferrer" class="btn btn-text-link">
+                            <span>🕒 変更履歴（証拠）を確認する</span>
+                        </a>
                     </div>
                 </div>
 
