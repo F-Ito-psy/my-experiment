@@ -168,57 +168,63 @@
     const stimuli1Back = generate1BackSequence();
     const stimuli2Back = generate2BackSequence();
 
-    // jsPsych初期化と、on_finishにおけるGAS自動送信処理のバインド
+    // jsPsych初期化 (データ自動送信処理を完結させる)
     const jsPsych = initJsPsych({
       display_element: 'jspsych-target',
       on_finish: function() {
-        const display_element = jsPsych.getDisplayElement();
+        const container = jsPsych.getDisplayElement();
         
-        // 1. 送信中ステータス画面を表示
-        display_element.innerHTML = `
-          <div class="flex flex-col items-center justify-center min-h-[400px] text-center p-8 bg-white rounded-3xl shadow-xl border border-slate-100 max-w-xl mx-auto my-12">
-            <div class="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-indigo-600 mb-6"></div>
-            <p class="text-xl font-black text-slate-800">データを送信中です...</p>
-            <p class="text-sm text-slate-400 mt-2">実験結果を安全に保存しています。このまま少々お待ちください。</p>
+        // 1. 送信中画面のレンダリング
+        container.className = "py-12 px-4 max-w-lg mx-auto";
+        container.innerHTML = `
+          <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center flex flex-col items-center justify-center min-h-[300px]">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-6"></div>
+            <h2 class="text-xl font-black text-slate-800">データを送信中です...</h2>
+            <p class="text-sm text-slate-400 mt-2">画面を閉じずにそのままお待ちください。</p>
           </div>
         `;
 
-        // 不要な行（教示画面やアンケート入力など）を除外し、テスト試行データのみを抽出
-        const rawTrials = jsPsych.data.get().filter({ task_part: 'test_trial' }).values();
-        
-        // 保存用の配列に整形
-        const cleanTrials = rawTrials.map(t => ({
-          participant_id: t.participant_id,
-          participant_age: t.participant_age,
-          participant_gender: t.participant_gender,
+        // 2. 実験データの抽出と整形
+        // 重要: GAS側の `const rows = Array.isArray(data) ? data : [data]` に適合するように、
+        // 各試行データそのものに参加者情報を結合（フラット化）した「オブジェクトの純粋な配列（Array）」を送信データとして構築します。
+        const testTrials = jsPsych.data.get().filter({ task_part: 'test_trial' }).values();
+        const cleanedData = testTrials.map(t => ({
+          participant_id: participantInfo.id,
+          participant_age: participantInfo.age,
+          participant_gender: participantInfo.gender,
           condition: t.condition,
           trial_number: t.trial_number,
           stimulus_letter: t.stimulus_letter,
+          is_target: t.is_target,
           target_condition: t.target_condition,
+          response: t.response,
+          rt: t.rt,
           user_interpreted_response: t.user_interpreted_response,
-          correct: t.correct,
-          rt: t.rt
+          correct: t.correct
         }));
 
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbyFOwUWAk2FpueYUuFWMPPb0OQCIuO4IUf66L0220YHIJ0qQMblrzQVr0IIybNUv2-dDg/exec';
 
-        // 2. fetchを用いた非同期POST送信 (mode: 'no-cors' 統制)
+        // 3. データのJSON化
+        const payload = JSON.stringify(cleanedData);
+
+        // 4. fetchによるPOST送信 (CORSブロックを確実に回避しながらGASに生JSONを届ける)
         fetch(GAS_URL, {
           method: 'POST',
           mode: 'no-cors',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'text/plain'
           },
-          body: JSON.stringify(cleanTrials)
+          body: payload
         })
         .then(() => {
-          // 3. 送信完了メッセージとフィードバックデータテーブルを同時にレンダリング
-          displayConsolidatedFeedback("実験終了。ご協力ありがとうございました。データは正常に送信されました。");
+          // 送信完了：フィードバック画面を表示して終了
+          displayConsolidatedFeedback(true);
         })
         .catch((error) => {
-          console.error('Data transmission failed:', error);
-          // ネットワークエラーなどの場合でも、ローカルに蓄積されたフィードバックは確実に描画する
-          displayConsolidatedFeedback("実験終了。ご協力ありがとうございました。（※通信状況によりデータの送信に失敗した可能性がありますが、実験結果は以下に表示されています）");
+          console.error('Data dispatch failed:', error);
+          // エラー時も参加者に配慮して結果はしっかり表示する
+          displayConsolidatedFeedback(false);
         });
       }
     });
@@ -309,7 +315,7 @@
           
           <div class="space-y-4 text-slate-600 text-[1.1rem] leading-relaxed">
             <p>最初のテストは、負荷の軽い記憶テスト<strong>「1-Back（ワンバック）課題」</strong>です。</p>
-            <p>画面中央にアルファベットが1文字ずつポン、ポンと順番に表示されます。</p>
+            <p>画面中央にアルファベットが1文字ずつポン, ポンと順番に表示されます。</p>
             <p>あなたの課題は、<strong>「いま表示された文字」が、「1つ前に表示された文字」と「同じ」か「違う」か</strong>を素早く判定することです。</p>
             
             <div class="bg-violet-50 border-l-4 border-violet-500 p-4 rounded-r-lg my-5 text-[0.95rem] text-violet-900 leading-relaxed">
@@ -361,6 +367,9 @@
       };
       timeline.push(fixation);
 
+      // 本番試行用の一時応答スコープ変数 (擬似イベントの失敗を回避するための極めて安全なモデル)
+      let currentResponse = { key: null, rt: null, timestamp: null };
+
       // 本番刺激提示 (2000ms固定、500ms後に文字非表示)
       const trial = {
         type: jsPsychHtmlKeyboardResponse,
@@ -391,6 +400,12 @@
         choices: ['f', 'j'],
         trial_duration: 2000,
         response_ends_trial: false, // 厳格な時間制御
+        on_start: function(trial_config) {
+          // 試行開始時の初期化
+          currentResponse.key = null;
+          currentResponse.rt = null;
+          currentResponse.timestamp = performance.now();
+        },
         on_load: function() {
           // 500ms経過で文字を隠す
           setTimeout(function() {
@@ -398,9 +413,14 @@
             if (el) el.style.visibility = 'hidden';
           }, 500);
 
-          // スマホ/クリック用仮想反応バインド
+          // スマホ/クリック用仮想反応バインド (直接変数にミリ秒精度でレスポンスを格納する強固な方法)
           window.registerButtonResponse = function(resp) {
+            if (currentResponse.key !== null) return; // すでに回答済みなら何もしない
+
+            const now = performance.now();
+            const rt = Math.round(now - currentResponse.timestamp);
             const mappedKey = (resp === 'match') ? 'f' : 'j';
+
             const hitBtn = document.getElementById(resp === 'match' ? 'btn-match' : 'btn-mismatch');
             const offBtn = document.getElementById(resp === 'match' ? 'btn-mismatch' : 'btn-match');
             if (hitBtn && offBtn) {
@@ -409,14 +429,25 @@
               hitBtn.disabled = true;
               offBtn.disabled = true;
             }
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: mappedKey }));
-            document.dispatchEvent(new KeyboardEvent('keyup', { key: mappedKey }));
+
+            // 一時データにミリ秒精度のレスポンスを安全に保持
+            currentResponse.key = mappedKey;
+            currentResponse.rt = rt;
           };
         },
         on_finish: function(data) {
+          let finalResponse = data.response;
+          let finalRt = data.rt;
+
+          // キーボード入力が検知されず、画面タップ(仮想ボタン)による応答が存在した場合
+          if (finalResponse === null && currentResponse.key !== null) {
+            finalResponse = currentResponse.key;
+            finalRt = currentResponse.rt;
+          }
+
           let userResponse = null;
-          if (data.response === 'f') userResponse = 'match';
-          else if (data.response === 'j') userResponse = 'mismatch';
+          if (finalResponse === 'f') userResponse = 'match';
+          else if (finalResponse === 'j') userResponse = 'mismatch';
 
           const isCorrect = (userResponse === stim.correct_response);
 
@@ -426,11 +457,13 @@
           data.stimulus_letter = stim.stimulus_letter;
           data.is_target = stim.is_target;
           data.target_condition = stim.correct_response === 'match' ? '同じ' : '違う';
-          data.user_raw_response = data.response;
+          data.response = finalResponse;
+          data.rt = finalRt !== null ? Math.round(finalRt) : null;
+          data.user_raw_response = finalResponse;
           data.user_interpreted_response = userResponse ? (userResponse === 'match' ? '同じ' : '違う') : '無反応';
           data.correct = isCorrect;
-          data.rt = data.rt !== null ? Math.round(data.rt) : null;
 
+          // 登録解除
           window.registerButtonResponse = null;
         }
       };
@@ -504,6 +537,9 @@
       };
       timeline.push(fixation);
 
+      // 本番試行用の二重応答・タイムアウト制御一時変数
+      let currentResponse2B = { key: null, rt: null, timestamp: null };
+
       // 本番刺激提示 (2000ms固定、500ms後に非表示)
       const trial = {
         type: jsPsychHtmlKeyboardResponse,
@@ -534,6 +570,11 @@
         choices: ['f', 'j'],
         trial_duration: 2000,
         response_ends_trial: false,
+        on_start: function(trial_config) {
+          currentResponse2B.key = null;
+          currentResponse2B.rt = null;
+          currentResponse2B.timestamp = performance.now();
+        },
         on_load: function() {
           // 500ms経過で文字を隠す
           setTimeout(function() {
@@ -543,7 +584,12 @@
 
           // スマホ/キー連動バインド
           window.registerButtonResponse = function(resp) {
+            if (currentResponse2B.key !== null) return; // 回答済み
+
+            const now = performance.now();
+            const rt = Math.round(now - currentResponse2B.timestamp);
             const mappedKey = (resp === 'match') ? 'f' : 'j';
+
             const hitBtn = document.getElementById(resp === 'match' ? 'btn-match' : 'btn-mismatch');
             const offBtn = document.getElementById(resp === 'match' ? 'btn-mismatch' : 'btn-match');
             if (hitBtn && offBtn) {
@@ -552,14 +598,24 @@
               hitBtn.disabled = true;
               offBtn.disabled = true;
             }
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: mappedKey }));
-            document.dispatchEvent(new KeyboardEvent('keyup', { key: mappedKey }));
+
+            currentResponse2B.key = mappedKey;
+            currentResponse2B.rt = rt;
           };
         },
         on_finish: function(data) {
+          let finalResponse = data.response;
+          let finalRt = data.rt;
+
+          // キーボード入力が検知されず、画面タップ(仮想ボタン)による応答が存在した場合
+          if (finalResponse === null && currentResponse2B.key !== null) {
+            finalResponse = currentResponse2B.key;
+            finalRt = currentResponse2B.rt;
+          }
+
           let userResponse = null;
-          if (data.response === 'f') userResponse = 'match';
-          else if (data.response === 'j') userResponse = 'mismatch';
+          if (finalResponse === 'f') userResponse = 'match';
+          else if (finalResponse === 'j') userResponse = 'mismatch';
 
           const isCorrect = (userResponse === stim.correct_response);
 
@@ -569,10 +625,11 @@
           data.stimulus_letter = stim.stimulus_letter;
           data.is_target = stim.is_target;
           data.target_condition = stim.correct_response === 'match' ? '同じ' : '違う';
-          data.user_raw_response = data.response;
+          data.response = finalResponse;
+          data.rt = finalRt !== null ? Math.round(finalRt) : null;
+          data.user_raw_response = finalResponse;
           data.user_interpreted_response = userResponse ? (userResponse === 'match' ? '同じ' : '違う') : '無反応';
           data.correct = isCorrect;
-          data.rt = data.rt !== null ? Math.round(data.rt) : null;
 
           window.registerButtonResponse = null;
         }
@@ -582,9 +639,8 @@
 
     /**
      * データ集計および、高機能統合結果画面のレンダリング
-     * @param {string} completionMessage 送信結果などの補足アナウンスメッセージ
      */
-    function displayConsolidatedFeedback(completionMessage) {
+    function displayConsolidatedFeedback(isUploaded = true) {
       const allTrials = jsPsych.data.get().filter({ task_part: 'test_trial' }).values();
       
       const trials1B = allTrials.filter(t => t.condition === '1-back');
@@ -603,18 +659,26 @@
       const container = jsPsych.getDisplayElement();
       container.className = "py-12 px-4 max-w-5xl mx-auto";
 
+      // 成功 / 完了に応じた送信完了バナー
+      const statusBanner = isUploaded 
+        ? `
+          <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-2xl mb-8 flex items-center justify-center gap-3">
+            <svg class="w-6 h-6 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span class="font-extrabold text-sm md:text-base text-center">実験終了。ご協力ありがとうございました。（データは正常に自動送信されました）</span>
+          </div>
+        `
+        : `
+          <div class="bg-amber-50 border border-amber-200 text-amber-800 px-6 py-4 rounded-2xl mb-8 flex items-center justify-center gap-3">
+            <svg class="w-6 h-6 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <span class="font-extrabold text-sm md:text-base text-center">実験終了。ご協力ありがとうございました。（オフラインまたはローカルでの実験終了として記録されました）</span>
+          </div>
+        `;
+
       let htmlContent = `
         <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 md:p-12">
           
-          <!-- 追加された自動送信ステータスのアラート表示 -->
-          ${completionMessage ? `
-            <div class="mb-8 p-5 bg-indigo-50 border-l-4 border-indigo-600 text-indigo-900 rounded-r-xl text-left text-sm font-semibold shadow-sm flex items-center gap-3">
-              <svg class="h-5 w-5 text-indigo-600 flex-shrink-0 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>${completionMessage}</span>
-            </div>
-          ` : ''}
+          <!-- 送信完了メッセージバナー -->
+          ${statusBanner}
 
           <!-- レポートヘッダ -->
           <div class="text-center border-b border-slate-100 pb-8 mb-8">
